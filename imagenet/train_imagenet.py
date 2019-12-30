@@ -9,7 +9,7 @@ from train import train
 from generator import Generator
 from utils import pp, visualize, to_json
 
-flags = tf.app.flags
+flags = tf.compat.v1.flags
 # flags.DEFINE_integer("epoch", 25, "Epoch to train [25]")
 flags.DEFINE_float("discriminator_learning_rate", 0.0004, "Learning rate of for adam")
 flags.DEFINE_float("generator_learning_rate", 0.0004, "Learning rate of for adam")
@@ -33,7 +33,7 @@ def main(_):
     if not os.path.exists(FLAGS.sample_dir):
         os.makedirs(FLAGS.sample_dir)
 
-    with tf.Session(config=tf.ConfigProto(
+    with tf.compat.v1.Session(config=tf.compat.v1.ConfigProto(
               allow_soft_placement=True, log_device_placement=False)) as sess:
         if FLAGS.dataset == 'mnist':
             assert False
@@ -54,9 +54,9 @@ def main(_):
                     )
 
         if FLAGS.is_train:
-            print "TRAINING"
+            print("TRAINING")
             dcgan.train(FLAGS)
-            print "DONE TRAINING"
+            print("DONE TRAINING") 
         else:
             dcgan.load(FLAGS.checkpoint_dir)
 
@@ -64,4 +64,4 @@ def main(_):
         visualize(sess, dcgan, FLAGS, OPTION)
 
 if __name__ == '__main__':
-    tf.app.run()
+    tf.compat.v1.app.run()

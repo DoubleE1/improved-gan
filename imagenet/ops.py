@@ -16,7 +16,7 @@ class batch_norm(object):
     def __init__(self, batch_size, epsilon=1e-5, momentum = 0.1, name="batch_norm", half=None):
         assert half is None
         del momentum # unused
-        with tf.variable_scope(name) as scope:
+        with tf.compat.v1.variable_scope(name) as scope:
             self.epsilon = epsilon
             self.batch_size = batch_size
 
@@ -38,7 +38,7 @@ class batch_norm(object):
                 assert False, shape
             shape = x.get_shape().as_list()
 
-        with tf.variable_scope(self.name) as scope:
+        with tf.compat.v1.variable_scope(self.name) as scope:
             self.gamma = tf.get_variable("gamma", [shape[-1]],
                                 initializer=tf.random_normal_initializer(1., 0.02))
             self.beta = tf.get_variable("beta", [shape[-1]],
@@ -58,7 +58,7 @@ class conv_batch_norm(object):
     """Code modification of http://stackoverflow.com/a/33950177"""
     def __init__(self, name="batch_norm", epsilon=1e-5, momentum=0.1,
         in_dim=None):
-        with tf.variable_scope(name) as scope:
+        with tf.compat.v1.variable_scope(name) as scope:
             self.epsilon = epsilon
             self.momentum = momentum
             self.name = name
@@ -66,12 +66,11 @@ class conv_batch_norm(object):
             global TRAIN_MODE
             self.train = TRAIN_MODE
             self.ema = tf.train.ExponentialMovingAverage(decay=0.9)
-            print "initing %s in train: %s" % (scope.name, self.train)
-
+            print(f"initing {scope.name} in train: {self.train}")
     def __call__(self, x):
         shape = x.get_shape()
         shp = self.in_dim or shape[-1]
-        with tf.variable_scope(self.name) as scope:
+        with tf.compat.v1.variable_scope(self.name) as scope:
             self.gamma = tf.get_variable("gamma", [shp],
                                          initializer=tf.random_normal_initializer(1., 0.02))
             self.beta = tf.get_variable("beta", [shp],
@@ -114,9 +113,9 @@ def conv_cond_concat(x, y):
 def conv2d(input_, output_dim,
            k_h=5, k_w=5, d_h=2, d_w=2, stddev=0.02,
            name="conv2d"):
-    with tf.variable_scope(name):
+    with tf.compat.v1.variable_scope(name):
         w = tf.get_variable('w', [k_h, k_w, input_.get_shape()[-1], output_dim],
-                            initializer=tf.truncated_normal_initializer(stddev=stddev))
+                            initializer=tf.compat.v1.truncated_normal_initializer(stddev=stddev))
         conv = tf.nn.conv2d(input_, w, strides=[1, d_h, d_w, 1], padding='SAME')
 
         biases = tf.get_variable('biases', [output_dim], initializer=tf.constant_initializer(0.0))
@@ -128,19 +127,13 @@ def deconv2d(input_, output_shape,
              k_h=5, k_w=5, d_h=2, d_w=2, stddev=0.02,
              name="deconv2d", with_w=False,
              init_bias=0.):
-    with tf.variable_scope(name):
+    with tf.compat.v1.variable_scope(name):
         # filter : [height, width, output_channels, in_channels]
         w = tf.get_variable('w', [k_h, k_w, output_shape[-1], input_.get_shape()[-1]],
                             initializer=tf.random_normal_initializer(stddev=stddev))
 
-        try:
-            deconv = tf.nn.conv2d_transpose(input_, w, output_shape=output_shape,
-                                strides=[1, d_h, d_w, 1])
-
-        # Support for versions of TensorFlow before 0.7.0
-        except AttributeError:
-            deconv = tf.nn.deconv2d(input_, w, output_shape=output_shape,
-                                strides=[1, d_h, d_w, 1])
+        deconv = tf.nn.conv2d_transpose(input_, w, output_shape=output_shape,
+                            strides=[1, d_h, d_w, 1])
 
         biases = tf.get_variable('biases', [output_shape[-1]], initializer=tf.constant_initializer(init_bias))
         deconv = tf.reshape(tf.nn.bias_add(deconv, biases), deconv.get_shape())
@@ -160,18 +153,18 @@ def special_deconv2d(input_, output_shape,
     assert k_h % d_h == 0
     assert k_w % d_w == 0
 
-    with tf.variable_scope(name):
+    with tf.compat.v1.variable_scope(name):
         # filter : [height, width, output_channels, in_channels]
         w = tf.get_variable('w', [k_h, k_w, output_shape[-1], input_.get_shape()[-1]],
                             initializer=tf.random_normal_initializer(stddev=stddev))
 
         def check_shape(h_size, im_size, stride):
             if h_size != (im_size + stride - 1) // stride:
-                print "Need h_size == (im_size + stride - 1) // stride"
-                print "h_size: ", h_size
-                print "im_size: ", im_size
-                print "stride: ", stride
-                print "(im_size + stride - 1) / float(stride): ", (im_size + stride - 1) / float(stride)
+                print("Need h_size == (im_size + stride - 1) // stride")
+                print(f"h_size: {h_size}")
+                print(f"im_size: {im_size}")
+                print(f"stride: {stride}")
+                print(f"(im_size + stride - 1) / float(stride): {(im_size + stride - 1) / float(stride)}")
                 raise ValueError()
 
         check_shape(int(input_.get_shape()[1]), output_shape[1] + k_h, d_h)
@@ -192,7 +185,7 @@ def special_deconv2d(input_, output_shape,
             return deconv
 
 def lrelu(x, leak=0.2, name="lrelu"):
-    with tf.variable_scope(name):
+    with tf.compat.v1.variable_scope(name):
         f1 = 0.5 * (1 + leak)
         f2 = 0.5 * (1 - leak)
         return f1 * x + f2 * abs(x)
@@ -231,7 +224,7 @@ def lrelu_sq(x):
 def linear(input_, output_size, scope=None, mean=0., stddev=0.02, bias_start=0.0, with_w=False):
     shape = input_.get_shape().as_list()
 
-    with tf.variable_scope(scope or "Linear"):
+    with tf.compat.v1.variable_scope(scope or "Linear"):
         matrix = tf.get_variable("Matrix", [shape[1], output_size], tf.float32,
                                  tf.random_normal_initializer(mean=mean, stddev=stddev))
         bias = tf.get_variable("bias", [output_size],
@@ -304,7 +297,7 @@ class batch_norm_second_half(object):
 
     """
     def __init__(self, epsilon=1e-5,  name="batch_norm"):
-        with tf.variable_scope(name) as scope:
+        with tf.compat.v1.variable_scope(name) as scope:
             self.epsilon = epsilon
 
             self.name=name
@@ -324,7 +317,7 @@ class batch_norm_second_half(object):
                 assert False, shape
             shape = x.get_shape().as_list()
 
-        with tf.variable_scope(self.name) as scope:
+        with tf.compat.v1.variable_scope(self.name) as scope:
             self.gamma = tf.get_variable("gamma", [shape[-1]],
                                 initializer=tf.random_normal_initializer(1., 0.02))
             self.beta = tf.get_variable("beta", [shape[-1]],
@@ -347,7 +340,7 @@ class batch_norm_first_half(object):
 
     """
     def __init__(self, epsilon=1e-5,  name="batch_norm"):
-        with tf.variable_scope(name) as scope:
+        with tf.compat.v1.variable_scope(name) as scope:
             self.epsilon = epsilon
 
             self.name=name
@@ -367,7 +360,7 @@ class batch_norm_first_half(object):
                 assert False, shape
             shape = x.get_shape().as_list()
 
-        with tf.variable_scope(self.name) as scope:
+        with tf.compat.v1.variable_scope(self.name) as scope:
             self.gamma = tf.get_variable("gamma", [shape[-1]],
                                 initializer=tf.random_normal_initializer(1., 0.02))
             self.beta = tf.get_variable("beta", [shape[-1]],
@@ -386,14 +379,14 @@ class batch_norm_first_half(object):
             return out
 
 def decayer(x, name="decayer"):
-    with tf.variable_scope(name):
+    with tf.compat.v1.variable_scope(name):
         scale = tf.get_variable("scale", [1], initializer=tf.constant_initializer(1.))
         decay_scale = tf.get_variable("decay_scale", [1], initializer=tf.constant_initializer(1.))
         relu = tf.nn.relu(x)
         return scale * relu / (1. + tf.abs(decay_scale) * tf.square(decay_scale))
 
 def decayer2(x, name="decayer"):
-    with tf.variable_scope(name):
+    with tf.compat.v1.variable_scope(name):
         scale = tf.get_variable("scale", [int(x.get_shape()[-1])], initializer=tf.constant_initializer(1.))
         decay_scale = tf.get_variable("decay_scale", [int(x.get_shape()[-1])], initializer=tf.constant_initializer(1.))
         relu = tf.nn.relu(x)
@@ -401,7 +394,7 @@ def decayer2(x, name="decayer"):
 
 class batch_norm_cross(object):
     def __init__(self, epsilon=1e-5,  name="batch_norm"):
-        with tf.variable_scope(name) as scope:
+        with tf.compat.v1.variable_scope(name) as scope:
             self.epsilon = epsilon
             self.name=name
 
@@ -420,7 +413,7 @@ class batch_norm_cross(object):
                 assert False, shape
             shape = x.get_shape().as_list()
 
-        with tf.variable_scope(self.name) as scope:
+        with tf.compat.v1.variable_scope(self.name) as scope:
             self.gamma0 = tf.get_variable("gamma0", [shape[-1] // 2],
                                 initializer=tf.random_normal_initializer(1., 0.02))
             self.beta0 = tf.get_variable("beta0", [shape[-1] // 2],
@@ -467,9 +460,9 @@ def constrained_conv2d(input_, output_dim,
     assert k_w % d_w == 0
     # constrained to have stride be a factor of kernel width
     # this is intended to reduce convolution artifacts
-    with tf.variable_scope(name):
+    with tf.compat.v1.variable_scope(name):
         w = tf.get_variable('w', [k_h, k_w, input_.get_shape()[-1], output_dim],
-                            initializer=tf.truncated_normal_initializer(stddev=stddev))
+                            initializer=tf.compat.v1.truncated_normal_initializer(stddev=stddev))
 
         # This is meant to reduce boundary artifacts
         padded = tf.pad(input_, [[0, 0],

@@ -26,7 +26,7 @@ class DCGAN(object):
                  devices=None,
                  disable_vbn=False,
                  sample_size=64,
-		 out_init_b=0.,
+                 out_init_b=0.,
                  out_stddev=.15):
         """
 
@@ -44,8 +44,8 @@ class DCGAN(object):
         self.disable_vbn = disable_vbn
         self.devices = devices
         self.d_label_smooth = d_label_smooth
-	self.out_init_b = out_init_b
-	self.out_stddev = out_stddev
+        self.out_init_b = out_init_b
+        self.out_stddev = out_stddev
         self.config = config
         self.generator_target_prob = generator_target_prob
         if generator is not None:
@@ -226,9 +226,8 @@ class DCGAN(object):
             self.saver.restore(self.sess, os.path.join(checkpoint_dir, ckpt_name))
             return True
         else:
-            print "Bad checkpoint: ", ckpt
+            print("Bad checkpoint: ", ckpt)
             return False
-
 
 class BuildModel(object):
     """
@@ -296,7 +295,7 @@ class Train(object):
         return self.func(self.dcgan, config)
 
 def get_vars(self):
-    t_vars = tf.trainable_variables()
+    t_vars = tf.compat.v1.trainable_variables()
     self.d_vars = [var for var in t_vars if var.name.startswith('d_')]
     self.g_vars = [var for var in t_vars if var.name.startswith('g_')]
     for x in self.d_vars:
@@ -309,15 +308,15 @@ def get_vars(self):
 
 
 def read_and_decode(filename_queue):
-    reader = tf.TFRecordReader()
+    reader = tf.compat.v1.TFRecordReader()
     _, serialized_example = reader.read(filename_queue)
-    features = tf.parse_single_example(
+    features = tf.compat.v1.parse_single_example(
             serialized_example,
             features={
-                'image_raw': tf.FixedLenFeature([], tf.string),
+                'image_raw': tf.compat.v1.FixedLenFeature([], tf.string),
             })
 
-    image = tf.decode_raw(features['image_raw'], tf.uint8)
+    image = tf.compat.v1.decode_raw(features['image_raw'], tf.uint8)
     image.set_shape(128 * 128 * 3)
     image = tf.reshape(image, [128, 128, 3])
 
@@ -326,16 +325,16 @@ def read_and_decode(filename_queue):
     return image
 
 def read_and_decode_with_labels(filename_queue):
-    reader = tf.TFRecordReader()
+    reader = tf.compat.v1.TFRecordReader()
     _, serialized_example = reader.read(filename_queue)
-    features = tf.parse_single_example(
+    features = tf.compat.v1.parse_single_example(
             serialized_example,
             features={
-                'image_raw': tf.FixedLenFeature([], tf.string),
-                'label' : tf.FixedLenFeature([], tf.int64)
+                'image_raw': tf.compat.v1.FixedLenFeature([], tf.string),
+                'label' : tf.compat.v1.FixedLenFeature([], tf.int64)
             })
 
-    image = tf.decode_raw(features['image_raw'], tf.uint8)
+    image = tf.compat.v1.decode_raw(features['image_raw'], tf.uint8)
     image.set_shape(128 * 128 * 3)
     image = tf.reshape(image, [128, 128, 3])
 
@@ -379,7 +378,7 @@ class VBNL(object):
             else:
                 assert False, shape
             shape = x.get_shape().as_list()
-        with tf.variable_scope(name) as scope:
+        with tf.compat.v1.variable_scope(name) as scope:
             assert name.startswith("d_") or name.startswith("g_")
             self.epsilon = epsilon
             self.name = name
@@ -418,7 +417,7 @@ class VBNL(object):
             else:
                 assert False, shape
             shape = x.get_shape().as_list()
-        with tf.variable_scope(self.name) as scope:
+        with tf.compat.v1.variable_scope(self.name) as scope:
             new_coeff = 1. / (self.batch_size + 1.)
             old_coeff = 1. - new_coeff
             new_mean = tf.reduce_mean(x, [0, 1, 2], keep_dims=True)
@@ -477,7 +476,7 @@ class VBNLP(object):
             else:
                 assert False, shape
             shape = x.get_shape().as_list()
-        with tf.variable_scope(name) as scope:
+        with tf.compat.v1.variable_scope(name) as scope:
             assert name.startswith("d_") or name.startswith("g_")
             self.epsilon = epsilon
             self.name = name
@@ -515,7 +514,7 @@ class VBNLP(object):
             else:
                 assert False, shape
             shape = x.get_shape().as_list()
-        with tf.variable_scope(self.name) as scope:
+        with tf.compat.v1.variable_scope(self.name) as scope:
             new_coeff = 1. / (self.batch_size + 1.)
             old_coeff = 1. - new_coeff
             new_mean = tf.reduce_mean(x, [0], keep_dims=True)
@@ -574,7 +573,7 @@ class VBN(object):
             else:
                 assert False, shape
             shape = x.get_shape().as_list()
-        with tf.variable_scope(name) as scope:
+        with tf.compat.v1.variable_scope(name) as scope:
             assert name.startswith("d_") or name.startswith("g_")
             self.epsilon = epsilon
             self.name = name
@@ -612,7 +611,7 @@ class VBN(object):
             else:
                 assert False, shape
             shape = x.get_shape().as_list()
-        with tf.variable_scope(self.name) as scope:
+        with tf.compat.v1.variable_scope(self.name) as scope:
             new_coeff = 1. / (self.batch_size + 1.)
             old_coeff = 1. - new_coeff
             new_mean = tf.reduce_mean(x, [1, 2], keep_dims=True)
