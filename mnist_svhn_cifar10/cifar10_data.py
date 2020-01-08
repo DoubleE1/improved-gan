@@ -1,4 +1,4 @@
-import cPickle
+import pickle as cPickle
 import os
 import sys
 import tarfile
