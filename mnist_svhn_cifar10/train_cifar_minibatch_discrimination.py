@@ -1,5 +1,5 @@
 import argparse
-import cPickle
+import pickle as cPickle
 import time
 import numpy as np
 import theano as th
